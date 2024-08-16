@@ -1,14 +1,42 @@
 from fastapi import FastAPI, Body
+from pydantic import BaseModel, Field
+from typing import Optional
 
 app = FastAPI()
 
+class Blog:
+    blog_id: int
+    blog_title: str
+    blog_author: str
+    
+    def __init__(self, blog_id, blog_title, blog_author):
+        self.blog_id=blog_id
+        self.blog_title=blog_title
+        self.blog_author=blog_author
+    
+class BlogRequest(BaseModel):
+    blog_id: Optional[int] 
+    blog_title: str = Field(min_length=1)
+    blog_author: str = Field(min_length=1)
+    
+    model_config = {
+        "json_schema_extra": {
+            "example" : {
+                "blog_id" : 1,
+                "blog_title" : "Learn FastAPI",
+                "blog_author" : "John Doe"
+            }
+        }
+    }
+
 BLOGS = [
-    {'blog_id': 1, 'blog_title': 'blog name 1', 'blog_author': 'author 1'},
-    {'blog_id': 2, 'blog_title': 'blog name 2', 'blog_author': 'author 2'},
-    {'blog_id': 3, 'blog_title': 'blog name 3', 'blog_author': 'author 3'},
-    {'blog_id': 4, 'blog_title': 'blog name 4', 'blog_author': 'author 2'},
-    {'blog_id': 5, 'blog_title': 'blog name 5', 'blog_author': 'author 3'},
-    ]
+    Blog(1, 'blog name 1', 'author 1'),
+    Blog(2, 'blog name 2', 'author 2'),
+    Blog(3, 'blog name 3', 'author 3'),
+    Blog(4, 'blog name 4', 'author 4'),
+    Blog(5, 'blog name 5', 'author 5'),
+    Blog(6, 'blog name 6', 'author 6'),
+]
 
 # GET APIs
 @app.get('/blogs')
@@ -36,12 +64,12 @@ async def blog_posts_by_title_and_author(blog_title:str, blog_author:str):
 
 # POST APIs       
 @app.post('/blogs/create_blog')
-async def create_blog_post(new_blog_post=Body()):
+async def create_blog_post(new_blog_post:BlogRequest):
     BLOGS.append(new_blog_post)
 
 # PUT APIs
 @app.put('/blogs/update_blog')
-async def update_blog_post(updated_blog_post=Body()):
+async def update_blog_post(updated_blog_post:BlogRequest):
     for i in range(len(BLOGS)):
         if BLOGS[i].get('blog_id') == updated_blog_post.get('blog_id'):
             BLOGS[i] = updated_blog_post

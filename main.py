@@ -43,5 +43,13 @@ async def create_blog_post(new_blog_post=Body()):
 @app.put('/blogs/update_blog')
 async def update_blog_post(updated_blog_post=Body()):
     for i in range(len(BLOGS)):
-        if BLOGS[i].get('blog_id').casefold() == updated_blog_post.get('blog_id').casefold():
+        if BLOGS[i].get('blog_id') == updated_blog_post.get('blog_id'):
             BLOGS[i] = updated_blog_post
+            
+# DELETE APIs
+@app.delete('/blogs/delete_blog/{blog_id}')
+async def delete_blog_post(blog_id:int):
+    for i in range(len(BLOGS)):
+        if BLOGS[i].get('blog_id') == blog_id:
+            BLOGS.pop(i)
+            break

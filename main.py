@@ -15,7 +15,7 @@ class Blog:
         self.blog_author=blog_author
     
 class BlogRequest(BaseModel):
-    blog_id: Optional[int] 
+    blog_id: Optional[int] = None
     blog_title: str = Field(min_length=1)
     blog_author: str = Field(min_length=1)
     
@@ -65,7 +65,8 @@ async def blog_posts_by_title_and_author(blog_title:str, blog_author:str):
 # POST APIs       
 @app.post('/blogs/create_blog')
 async def create_blog_post(new_blog_post:BlogRequest):
-    BLOGS.append(new_blog_post)
+    new_blog = Blog(**new_blog_post.model_dump())
+    BLOGS.append(new_blog)
 
 # PUT APIs
 @app.put('/blogs/update_blog')

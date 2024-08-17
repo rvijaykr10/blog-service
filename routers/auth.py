@@ -12,7 +12,7 @@ from jose import jwt, JWTError
 
 router = APIRouter(prefix='/auth', tags=['auth'])
 
-SECRET_KEY = 'f3024c44c11f0c4141aaaa10fd82d0d677674a07d57f22ee77a733af2243d7c3'
+SECRET_KEY = ''
 ALGORITHM = 'HS256'
 
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')

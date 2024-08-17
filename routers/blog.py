@@ -5,8 +5,9 @@ from pydantic import BaseModel, Field
 from starlette import status
 from models import Blog
 from database import SessionLocal
+from .auth import get_current_user
 
-router = APIRouter(prefix='/blogs', tags=['blogs'])
+router = APIRouter(prefix='/blog', tags=['blog'])
 
 def get_db():
     db = SessionLocal()
@@ -16,6 +17,7 @@ def get_db():
         db.close()
         
 db_dependency = Annotated[Session, Depends(get_db)]
+user_dependency = Annotated[dict, Depends(get_current_user)]
 
 class BlogRequest(BaseModel):
     title: str = Field(min_length=3)
@@ -34,26 +36,34 @@ class BlogRequest(BaseModel):
         }
     }
 
-@router.get("")
-async def get_blogs(db: db_dependency):
-    return db.query(Blog).all()
+@router.get("", status_code=status.HTTP_200_OK)
+async def get_blogs(user: user_dependency, db: db_dependency):
+    if user is None:
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+    return db.query(Blog).filter(Blog.owner_id == user.get('id')).all()
 
 @router.get("/{blog_id}", status_code=status.HTTP_200_OK)
-async def get_blog(db: db_dependency, blog_id:int=Path(gt=0)):
-    blog_model = db.query(Blog).filter(Blog.id == blog_id).first()
+async def get_blog(user: user_dependency, db: db_dependency, blog_id:int=Path(gt=0)):
+    if user is None:
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+    blog_model = db.query(Blog).filter(Blog.id == blog_id).filter(Blog.owner_id == user.get('id')).first()
     if blog_model is not None:
         return blog_model
     raise HTTPException(status_code=404, detail='Blog not found.')
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-async def create_post(db: db_dependency, blog_request:BlogRequest):
-    blog_model = Blog(**blog_request.model_dump())
+async def create_post(user: user_dependency, db: db_dependency, blog_request:BlogRequest):
+    if user is None:
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+    blog_model = Blog(**blog_request.model_dump(), owner_id=user.get('id'))
     db.add(blog_model)
     db.commit()
 
 @router.put("/{blog_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def update_post(db: db_dependency, blog_request:BlogRequest, blog_id:int=Path(gt=0)):
-    blog_model = db.query(Blog).filter(Blog.id == blog_id).first()
+async def update_post(user: user_dependency, db: db_dependency, blog_request:BlogRequest, blog_id:int=Path(gt=0)):
+    if user is None:
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+    blog_model = db.query(Blog).filter(Blog.id == blog_id).filter(Blog.owner_id == user.get('id')).first()
     if blog_model is None:
         raise HTTPException(status_code=404, detail='Blog not found.')
 
@@ -66,11 +76,13 @@ async def update_post(db: db_dependency, blog_request:BlogRequest, blog_id:int=P
     db.commit()
 
 @router.delete("/{blog_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_post(db: db_dependency, blog_id:int=Path(gt=0)):
-    blog_model = db.query(Blog).filter(Blog.id == blog_id).first()
+async def delete_post(user: user_dependency, db: db_dependency, blog_id:int=Path(gt=0)):
+    if user is None:
+        raise HTTPException(status_code=401, detail='Authentication Failed')
+    blog_model = db.query(Blog).filter(Blog.id == blog_id).filter(Blog.owner_id == user.get('id')).first()
     if blog_model is None:
         raise HTTPException(status_code=404, detail='Blog not found.')
     
-    db.query(Blog).filter(Blog.id == blog_id).delete()
+    db.query(Blog).filter(Blog.id == blog_id).filter(Blog.owner_id == user.get('id')).delete()
     db.commit()
         

@@ -1,3 +1,4 @@
+import os
 from datetime import timedelta, datetime, timezone
 from typing import Annotated
 from sqlalchemy.orm import Session
@@ -9,10 +10,11 @@ from models import Users
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from jose import jwt, JWTError
+from dotenv import load_dotenv
 
 router = APIRouter(prefix='/auth', tags=['auth'])
 
-SECRET_KEY = ''
+SECRET_KEY = os.environ.get('SECRET_KEY')
 ALGORITHM = 'HS256'
 
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
